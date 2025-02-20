@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-
+import { TextureLoader } from 'three';
             // Cria a cena Three.js
 
             var scene = new THREE.Scene();
@@ -19,7 +19,26 @@ import * as THREE from 'three';
             // Adiciona o elemento DOM do renderizador à página HTML
 
             document.body.appendChild(renderer.domElement);
+
+            // ativando as sombras
+            renderer.shadowMap.enabled = true;
             
+            //--------------------------------- LUZ -----------------------------------------
+
+            // luz ambiente 
+            const ambient_light = new THREE.AmbientLight(0x404040);  // Luz suave para iluminar tudo de forma leve
+            scene.add(ambient_light);
+
+            // luz pontual (lampada)
+            const point_light = new THREE.PointLight(0xf5f5dc, 50, 100);
+            point_light.position.set(0, 4, 0);
+            point_light.castShadow = true;
+            scene.add(point_light);
+            const helper_point_light = new THREE.PointLightHelper(point_light, 0.1);
+            scene.add(helper_point_light);
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            
+            //------------------------------- CAMERA ----------------------------------------
             //terceira pessoa
             /*
             camera.position.z = 6.5;
@@ -27,27 +46,60 @@ import * as THREE from 'three';
             camera.position.y = 3;
             */
 
+            
             //primeira pessoa
+            
             camera.position.z = -4.5;
             camera.position.x = 0;
             camera.position.y = 2;
             camera.rotation.y = Math.PI;
+            
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            
+            //------------------ Cria a geometria Three.js para o objeto mesh ---------------
+            //********* Criando a lampada *************
+            // * Criando o corpo da lampada
+            
+            const lamp_body_geometry = new THREE.CylinderGeometry(0.1, 0.1, 6, 32);
+            const lamp_body_material = new THREE.MeshPhongMaterial({color : 0xFFB69C });
+            const lamp_body = new THREE.Mesh(lamp_body_geometry, lamp_body_material);
+            lamp_body.position.set(0, 7, 0);
+            lamp_body.castShadow = true;
+            lamp_body.receiveShadow = true;
+            scene.add(lamp_body);
 
-            // Cria a geometria Three.js para o objeto mesh
+            // * Globo luminoso da lampada
+            const lamp_light_geometry = new THREE.SphereGeometry(0.2, 32, 32);
+            const lamp_light_material = new THREE.MeshBasicMaterial({color: 0xFFFFb2}); 
+            const lamp_light = new THREE.Mesh(lamp_light_geometry, lamp_light_material);
+            lamp_light.position.set(0, 4, 0);
+            lamp_light.castShadow = true;
+            scene.add(lamp_light);
+            //********************************************* 
 
-           
+            // Criando chão
+            const floor_geometry = new THREE.PlaneGeometry(50, 50);
+            const texture_loader = new TextureLoader;
+            const floor_texture = texture_loader.load("./textures/wood_floor.jpg");
+            const floor_material = new THREE.MeshPhongMaterial({map : floor_texture});
+            const floor = new THREE.Mesh(floor_geometry, floor_material);
+            floor.rotation.x = - Math.PI / 2;
+            floor.position.set(0, -5, 0);
+            scene.add(floor);  
+
 
             // Criando a mesa de sinuca como um plano verde
             const tableGeometry = new THREE.PlaneGeometry(10, 5);  // Mesa com dimensões 10x5 unidades
-            const tableMaterial = new THREE.MeshBasicMaterial({ color: 0x006400 });  // Cor verde escuro
+            const tableMaterial = new THREE.MeshStandardMaterial({ color: 0x006400 });  // Cor verde escuro
             const table = new THREE.Mesh(tableGeometry, tableMaterial);
 
             // Girando a mesa para que ela fique na posição horizontal
             table.rotation.x = -Math.PI / 2;  // Rotaciona para ficar deitada
+            table.receiveShadow = true;
             scene.add(table);
 
             // Criando as bordas da mesa com cubos
-            const borderMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 });  // Cor marrom das bordas
+            const borderMaterial = new THREE.MeshPhongMaterial({ color: 0x8B4513 });  // Cor marrom das bordas
             const borders = [];
 
             // Criando as 4 bordas ao redor da mesa
@@ -62,33 +114,39 @@ import * as THREE from 'three';
             borders[2].position.set(-5, 0.1, 0);   // Esquerda
             borders[3].position.set(5, 0.1, 0);    // Direita
 
+            //adicionando sombras
+            borders.forEach(border => border.receiveShadow = true);
+
             // Adicionando as bordas à cena
             borders.forEach(border => scene.add(border));
             
             const ballRadius = 0.1;
             const whiteBall = new THREE.Mesh(
             new THREE.SphereGeometry(ballRadius, 32, 32),
-            new THREE.MeshBasicMaterial({ color: 0xffffff })  // Cor branca
+            new THREE.MeshPhysicalMaterial({ color: 0xffffff })  // Cor branca
             );
             whiteBall.position.set(0, ballRadius, -1.5);  // Posicionar a bola branca
+            whiteBall.castShadow = true;
             scene.add(whiteBall);
 
             // Função para criar uma bola colorida
             function createBall(color, position) {
             const ball = new THREE.Mesh(
                 new THREE.SphereGeometry(ballRadius, 32, 32),
-                new THREE.MeshBasicMaterial({ color: color })
+                new THREE.MeshPhysicalMaterial({ color: color })
             );
             ball.position.set(position.x, ballRadius, position.z);
+            ball.castShadow = true;
             scene.add(ball);
             return ball;
             }
             const cue = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.05, 0.05, 2, 32),
-                new THREE.MeshBasicMaterial({ color: 0x8B4513 })  // Cor do taco
+                new THREE.MeshStandardMaterial({ color: 0x8B4513 })  // Cor do taco
             );
-            cue.position.set(0, ballRadius, -2.5);
-            cue.rotation.x = -Math.PI / 2;
+            cue.position.set(0, 0.3, -2.5);
+            cue.rotation.x = - Math.PI / 2.3;
+            cue.castShadow = true;
             scene.add(cue);
             // Colocando as bolas em uma formação triangular (14 bolas coloridas)
             const balls = [];
